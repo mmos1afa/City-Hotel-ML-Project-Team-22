@@ -1,0 +1,25 @@
+# Placeholder configuration; no pipeline reads this yet.
+data:
+  precleaned_dir: data/precleaned
+  cleaned_csv: data/cleaned/H2_cleaned.csv
+random_seed: 42
+clustering:
+  numeric_features: [LeadTime, StaysInWeekendNights, StaysInWeekNights, Adults, Children, Babies]
+  categorical_features: [Meal, ReservedRoomType, MarketSegment, DistributionChannel]
+  binary_features: [IsRepeatedGuest]
+  preprocessing:
+    scaler: standard
+    log_lead_time: false
+    allow_imputation: false
+  kmeans:
+    n_clusters: 3
+    n_init: 10
+  dbscan:
+    eps: null  # Pending k-distance review.
+    min_samples: 10
+  gmm:
+    n_components: 3
+    covariance_type: diag
+  search: {}
+  outputs_dir: outputs/clustering
+  artifacts_dir: artifacts/clustering
