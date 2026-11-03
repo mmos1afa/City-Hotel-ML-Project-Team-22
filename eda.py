@@ -1,6 +1,7 @@
 
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 
@@ -320,7 +321,7 @@ def verify_cleaned_data(df):
             ["NULL", "Undefined"]
         ).sum())
 def main():
-    project_dir = Path(__file__).resolve().parent.parent
+    project_dir = Path(__file__).resolve().parent
     dataset_names = ("H2_cleaned2.csv", "H2_cleaned3.csv")
     analyses = (
         check_missing_values,
@@ -338,11 +339,182 @@ def main():
 
     for dataset_name in dataset_names:
         print(f"\n========== {dataset_name} ==========")
-        df = pd.read_csv(project_dir / "data" / dataset_name)
+        df = pd.read_csv(project_dir / "data" / "cleaned" / dataset_name)
         print("Dataset shape:", df.shape)
 
         for analysis in analyses:
             analysis(df)
+    # Generate EDA graphs for the ORIGINAL dataset
+    original_path = project_dir / "data" / "precleaned" / "H2.csv"
+    output_dir = project_dir / "outputs" / "eda"
+
+    original_df = pd.read_csv(
+        original_path,
+        keep_default_na=False,
+        na_values=[""]
+    )
+
+    create_eda_graphs(original_df, output_dir)
+
+def create_eda_graphs(df, output_dir):
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    df = df.copy()
+
+    numeric_columns = [
+        "ADR",
+        "LeadTime",
+        "IsCanceled",
+        "StaysInWeekendNights",
+        "StaysInWeekNights",
+        "Adults",
+        "Children",
+        "Babies",
+    ]
+    for column in numeric_columns:
+        df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    # 1. Missing values, including literal NULL placeholders
+    missing = df.isna().sum()
+
+    for col in ["Agent", "Company"]:
+        missing[col] += (
+            df[col].astype("string").str.strip().eq("NULL").sum()
+        )
+
+    missing = missing[missing > 0].sort_values()
+
+    plt.figure(figsize=(10, 5))
+    missing.plot(kind="barh")
+    plt.title("Missing Values in Original H2 Dataset")
+    plt.xlabel("Number of Missing Values")
+    plt.tight_layout()
+    plt.savefig(output_dir / "01_missing_values.png")
+    plt.close()
+
+    # 2. ADR histogram
+    plt.figure(figsize=(9, 5))
+    plt.hist(df["ADR"].dropna(), bins=60, edgecolor="black")
+    plt.title("ADR Distribution")
+    plt.xlabel("Average Daily Rate")
+    plt.ylabel("Number of Bookings")
+    plt.tight_layout()
+    plt.savefig(output_dir / "02_adr_histogram.png")
+    plt.close()
+
+    # 3. ADR boxplot
+    plt.figure(figsize=(9, 4))
+    plt.boxplot(df["ADR"].dropna(), vert=False)
+    plt.title("ADR Outlier Detection")
+    plt.xlabel("ADR")
+    plt.tight_layout()
+    plt.savefig(output_dir / "03_adr_boxplot.png")
+    plt.close()
+
+    # 4. LeadTime histogram
+    plt.figure(figsize=(9, 5))
+    plt.hist(df["LeadTime"], bins=50, edgecolor="black")
+    plt.title("Lead Time Distribution")
+    plt.xlabel("Lead Time (Days)")
+    plt.ylabel("Bookings")
+    plt.tight_layout()
+    plt.savefig(output_dir / "04_leadtime_histogram.png")
+    plt.close()
+
+    # 5. LeadTime boxplot
+    plt.figure(figsize=(9, 4))
+    plt.boxplot(df["LeadTime"], vert=False)
+    plt.title("Lead Time Outliers")
+    plt.xlabel("Lead Time (Days)")
+    plt.tight_layout()
+    plt.savefig(output_dir / "05_leadtime_boxplot.png")
+    plt.close()
+
+    # 6. Numerical correlation heatmap
+    corr = df.select_dtypes(include="number").corr()
+
+    plt.figure(figsize=(14, 11))
+    plt.imshow(corr, cmap="coolwarm", vmin=-1, vmax=1)
+    plt.colorbar(label="Correlation")
+    plt.xticks(
+        range(len(corr.columns)),
+        corr.columns,
+        rotation=90,
+        fontsize=8
+    )
+    plt.yticks(
+        range(len(corr.columns)),
+        corr.columns,
+        fontsize=8
+    )
+    plt.title("Numerical Correlation Heatmap")
+    plt.tight_layout()
+    plt.savefig(output_dir / "06_correlation_heatmap.png")
+    plt.close()
+
+    # 7. Cancellation distribution
+    df["IsCanceled"].value_counts().sort_index().plot(
+        kind="bar", figsize=(7, 5)
+    )
+    plt.title("Cancellation Distribution")
+    plt.xlabel("IsCanceled (0 = No, 1 = Yes)")
+    plt.ylabel("Bookings")
+    plt.xticks(rotation=0)
+    plt.tight_layout()
+    plt.savefig(output_dir / "07_cancellation.png")
+    plt.close()
+
+    # 8. Arrival month distribution
+    months = [
+        "January", "February", "March", "April",
+        "May", "June", "July", "August",
+        "September", "October", "November", "December"
+    ]
+
+    df["ArrivalDateMonth"].value_counts().reindex(months).plot(
+        kind="bar", figsize=(11, 5)
+    )
+    plt.title("Bookings by Arrival Month")
+    plt.xlabel("Month")
+    plt.ylabel("Bookings")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(output_dir / "08_arrival_month.png")
+    plt.close()
+
+    # 9. Total nights distribution
+    total_nights = (
+        df["StaysInWeekendNights"]
+        + df["StaysInWeekNights"]
+    )
+
+    plt.figure(figsize=(9, 5))
+    plt.hist(total_nights, bins=40, edgecolor="black")
+    plt.title("Total Nights Distribution")
+    plt.xlabel("Nights")
+    plt.ylabel("Bookings")
+    plt.tight_layout()
+    plt.savefig(output_dir / "09_total_nights.png")
+    plt.close()
+
+    # 10. Total guests distribution
+    total_guests = (
+        df["Adults"]
+        + df["Children"].fillna(0)
+        + df["Babies"]
+    )
+
+    plt.figure(figsize=(9, 5))
+    plt.hist(total_guests, bins=20, edgecolor="black")
+    plt.title("Total Guests Distribution")
+    plt.xlabel("Guests")
+    plt.ylabel("Bookings")
+    plt.tight_layout()
+    plt.savefig(output_dir / "10_total_guests.png")
+    plt.close()
+
+    print("All 10 EDA graphs generated successfully!")
+    print("Saved in:", output_dir)
 
 
 if __name__ == "__main__":
