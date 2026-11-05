@@ -1,4 +1,4 @@
-# City-Hotel-ML-Project-Team-23
+# City-Hotel-ML-Project-Team-22
 
 University CSE382 machine learning project for City Hotel booking data.
 This repository is a skeleton only: no data loading, cleaning, preprocessing,
