@@ -1,28 +1,35 @@
-"""Scaffold interfaces only; every function is unimplemented."""
+import pandas as pd
 
-from __future__ import annotations
+NUMERIC_FEATURES = [
+    "LeadTime",
+    "StaysInWeekendNights",
+    "StaysInWeekNights",
+    "Adults",
+    "Children",
+    "Babies",
+]
 
-from typing import TYPE_CHECKING, Any
+BINARY_FEATURES = ["IsRepeatedGuest"]
 
-if TYPE_CHECKING:
-    import pandas as pd
+CATEGORICAL_FEATURES = [
+    "Meal",
+    "ReservedRoomType",
+    "MarketSegment",
+    "DistributionChannel",
+]
 
-
-def validate_cleaned_schema(df: pd.DataFrame) -> None:
-    """Validate required columns and types in the cleaned input; report violations."""
-    pass
-
-
-def audit_clustering_input(df: pd.DataFrame) -> dict[str, Any]:
-    """Return row counts, missingness, categories, and duplicate-policy audit findings."""
-    pass
-
-
-def get_feature_config() -> dict[str, Any]:
-    """Return the core feature groups and leakage exclusions."""
-    pass
+CLUSTERING_FEATURES = NUMERIC_FEATURES + BINARY_FEATURES + CATEGORICAL_FEATURES
 
 
-def select_clustering_features(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Return booking-time features and metadata, preserving row identifiers."""
-    pass
+def get_feature_config() -> dict:
+    """Return the numerical, binary, and categorical features used for clustering."""
+    return {
+        "numeric": NUMERIC_FEATURES.copy(),
+        "binary": BINARY_FEATURES.copy(),
+        "categorical": CATEGORICAL_FEATURES.copy(),
+    }
+
+
+def select_clustering_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Extract the selected booking features from the cleaned dataset."""
+    return df.loc[:, CLUSTERING_FEATURES].copy()
