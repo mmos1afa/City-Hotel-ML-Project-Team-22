@@ -1,8 +1,14 @@
+"""Provisional cancellation-prediction inputs for H2 City Hotel.
+
+No data splitting, missing-value imputation, encoding, scaling, or model fitting.
+Run: python -m classification.features
+"""
+
 from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = ROOT / "data" / "cleaned" / "H2_cleaned3.csv"
+DATA_PATH = ROOT / "data" / "cleaned" / "H2_cleaned2.csv"
 TARGET = "IsCanceled"
 
 # Initial shortlist; not a claim of learned feature importance.

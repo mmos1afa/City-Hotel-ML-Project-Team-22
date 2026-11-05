@@ -29,7 +29,7 @@ CATEGORICAL_FEATURES = [
 BINARY_FEATURES = ["IsRepeatedGuest"]
 
 
-def build_preprocessor(scale_numeric=True):
+def build_preprocessor(scale_numeric=True): #law scale numeric b false me4 ha3mel scaling lel data
     """Return a fresh, UNFITTED ColumnTransformer for our 12 features."""
     numeric_steps = [("imputer", SimpleImputer(strategy="median"))]
     if scale_numeric:

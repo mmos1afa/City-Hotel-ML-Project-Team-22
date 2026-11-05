@@ -16,7 +16,7 @@ from sklearn.model_selection import (
 from classification.features import (select_classification_features)
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = ROOT / "data" / "cleaned" / "H2_cleaned3.csv"
+DATA_PATH = ROOT / "data" / "cleaned" / "H2_cleaned2.csv"
 OUTPUT_PATH = ROOT / "outputs" / "classification" / "tables"
 SEED = 42
 TEST_SIZE = 0.20
