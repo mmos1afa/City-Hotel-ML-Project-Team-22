@@ -11,6 +11,7 @@ def check_missing_values(df):
 def check_statistics(df):
     print("\n===== STATISTICS =====")
     print(df.describe())
+    print("\nMedian ADR:", df["ADR"].median())
 
 
 def check_duplicates(df):
@@ -320,7 +321,7 @@ def verify_cleaned_data(df):
             ["NULL", "Undefined"]
         ).sum())
 def main():
-    project_dir = Path(__file__).resolve().parent.parent
+    data_dir = Path(__file__).resolve().parent / "data" / "cleaned"
     dataset_names = ("H2_cleaned2.csv", "H2_cleaned3.csv")
     analyses = (
         check_missing_values,
@@ -338,7 +339,11 @@ def main():
 
     for dataset_name in dataset_names:
         print(f"\n========== {dataset_name} ==========")
-        df = pd.read_csv(project_dir / "data" / dataset_name)
+        dataset_path = data_dir / dataset_name
+        if not dataset_path.exists():
+            raise FileNotFoundError(f"Dataset not found at: {dataset_path}")
+
+        df = pd.read_csv(dataset_path)
         print("Dataset shape:", df.shape)
 
         for analysis in analyses:

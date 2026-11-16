@@ -1,6 +1,8 @@
 numpy
 pandas
 scikit-learn
+xgboost
+optuna
 matplotlib
 PyYAML
 joblib

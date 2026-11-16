@@ -1,36 +1,73 @@
 import sys
 from pathlib import Path
+from joblib import dump
 
 CURRENT_DIR = Path(__file__).resolve().parent
 if str(CURRENT_DIR) not in sys.path:
     sys.path.append(str(CURRENT_DIR))
 
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
-from preprocessing import prepare_regression_data
-from models import build_regression_pipeline
-from evaluation import evaluate_regression_model
-
-# 1. Correct Project Root Path (1 level up from regression/)
-project_dir = CURRENT_DIR.parent
-raw_cleaned_path = project_dir / "data" / "cleaned" / "H2_cleaned3.csv"
-
-# Verify dataset existence before reading
-if not raw_cleaned_path.exists():
-    raise FileNotFoundError(f"Dataset not found at: {raw_cleaned_path}. Make sure data/cleaned/H2_cleaned3.csv exists!")
-
-df = pd.read_csv(raw_cleaned_path)
-reg_df = prepare_regression_data(df)
-
-X = reg_df.drop(columns=["ADR"])
-y = reg_df["ADR"]
-
-X_train, X_val, y_train, y_val = train_test_split(
-    X, y, test_size=0.2, random_state=42
+from sklearn.model_selection import (
+    KFold,
+    cross_validate,
 )
 
-pipeline = build_regression_pipeline(X_train)
-pipeline.fit(X_train, y_train)
+from models import build_regression_pipeline, get_regression_models
+from workflow import get_model_artifact_path, load_training_data
 
-metrics = evaluate_regression_model(pipeline, X_val, y_val, model_name="Linear Regression (Baseline)")
+cross_validation = KFold(n_splits=5, shuffle=True, random_state=42)
+scoring = {
+    "MAE": "neg_mean_absolute_error",
+    "RMSE": "neg_root_mean_squared_error",
+    "R2": "r2",
+}
+
+
+def main():
+    X_train, y_train = load_training_data()
+    models = get_regression_models()
+    for model_name, model in models.items():
+        pipeline = build_regression_pipeline(
+            X_train,
+            model=model,
+        )
+        cv_results = cross_validate(
+            pipeline,
+            X_train,
+            y_train,
+            cv=cross_validation,
+            scoring=scoring,
+        )
+
+        print(f"\n===== {model_name} (Baseline 5-Fold CV) =====")
+        fold_scores = {}
+        for metric in ("MAE", "RMSE", "R2"):
+            scores = cv_results[f"test_{metric}"]
+            if metric in ("MAE", "RMSE"):
+                scores = -scores
+            fold_scores[metric] = scores
+
+        for fold_index in range(cross_validation.n_splits):
+            print(
+                f"Fold {fold_index + 1}: "
+                f"MAE={fold_scores['MAE'][fold_index]:.2f}, "
+                f"RMSE={fold_scores['RMSE'][fold_index]:.2f}, "
+                f"R2={fold_scores['R2'][fold_index]:.4f}"
+            )
+
+        print("CV summary:")
+        for metric, scores in fold_scores.items():
+            digits = 4 if metric == "R2" else 2
+            print(
+                f"{metric}: {scores.mean():.{digits}f} "
+                f"± {scores.std():.{digits}f}"
+            )
+
+        pipeline.fit(X_train, y_train)
+        artifact_path = get_model_artifact_path("baseline", model_name)
+        artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        dump(pipeline, artifact_path)
+        print(f"Saved baseline model to: {artifact_path}")
+
+
+if __name__ == "__main__":
+    main()

@@ -18,7 +18,7 @@ LEAKAGE_COLUMNS = [
 
 def prepare_regression_data(df):
 
-    df = df.copy()
+    df = df.loc[df["ADR"] != 0].copy()
 
     # Create our three engineered features
     df = create_regression_features(df)
@@ -73,7 +73,5 @@ if __name__ == "__main__":
         print("New features:",
               ["TotalNights", "TotalGuests", "IsFamilyBooking"])
 
-        print("WeekendRatio included:",
-              "WeekendRatio" in regression_df.columns)
-
+    
         print("Saved successfully to:", output_path)
